@@ -9,7 +9,7 @@ Type=simple
 User=oxidized
 Group=oxidized
 WorkingDirectory=/opt/oxidized_editor
-ExecStart=/opt/oxidized_editor/oxidized-editor -config /opt/oxidized_editor/config.yaml
+ExecStart=/opt/oxidized_editor/oxidized-editor-linux -config /opt/oxidized_editor/config.yaml
 Restart=on-failure
 RestartSec=5s
 
