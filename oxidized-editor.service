@@ -1,0 +1,20 @@
+[Unit]
+Description=Oxidized editor
+Documentation=https://github.com/warunlock/oxidized_editor
+After=network.target oxidized.service
+Wants=oxidized.service
+
+[Service]
+Type=simple
+User=oxidized
+Group=oxidized
+WorkingDirectory=/opt/oxidized_editor
+ExecStart=/opt/oxidized_editor/oxidized-editor -config /opt/oxidized_editor/config.yaml
+Restart=on-failure
+RestartSec=5s
+
+# Налаштування оточення
+Environment=PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+
+[Install]
+WantedBy=multi-user.target

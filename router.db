@@ -1,0 +1,11 @@
+# Oxidized router.db sample file
+# Format: name:ip:model:username:password:group:port
+core-sw01.noc:192.168.1.1:cisco:admin:C1sc0!P@ss:core:22
+core-sw02.noc:192.168.1.2:cisco:admin:C1sc0!P@ss:core:22
+edge-rt01.gw:10.0.0.1:junos:netops:JuN!p3r#99:edge:22
+dist-sw01.hq:192.168.10.10:routeros:admin:MikroT!k#2024:distribution:2222
+access-sw01.fl1:192.168.20.11:edgeos:ubnt:Ub1qu1t1$:access:
+access-sw02.fl2:192.168.20.12:edgeos:ubnt:Ub1qu1t1$:access:
+border-gw01:172.16.0.1:huawei:root:HwSec@2024:border:22
+firewall-cluster:10.10.10.1:fortios:admin:Forti!9876:security:
+vpn-concentrator:10.20.0.1:vyos:vyos:VyOs#Key2026:vpn:22

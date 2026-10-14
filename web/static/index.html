@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Oxidized Router DB Manager</title>
+  <!-- Google Fonts: Inter & JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+
+  <!-- Toast Notification Container -->
+  <div id="toastContainer" class="toast-container"></div>
+
+  <!-- AUTH / LOGIN OVERLAY -->
+  <div id="authScreen" class="auth-wrapper">
+    <div class="login-card glass">
+      <div class="login-header">
+        <div class="login-icon">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect>
+            <rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect>
+            <line x1="6" y1="6" x2="6.01" y2="6"></line>
+            <line x1="6" y1="18" x2="6.01" y2="18"></line>
+          </svg>
+        </div>
+        <h2>Oxidized Console</h2>
+        <p>Керування базою обладнання router.db</p>
+      </div>
+
+      <form id="loginForm">
+        <div class="form-group">
+          <label class="form-label" for="loginUsername">Користувач</label>
+          <input type="text" id="loginUsername" class="form-input" required autocomplete="username" placeholder="admin">
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="loginPassword">Пароль</label>
+          <div class="input-with-action">
+            <input type="password" id="loginPassword" class="form-input" required autocomplete="current-password" placeholder="Введіть пароль">
+            <button type="button" class="input-action-btn" id="toggleLoginPassword" title="Показати/приховати пароль">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                <circle cx="12" cy="12" r="3"></circle>
+              </svg>
+            </button>
+          </div>
+        </div>
+        <div id="loginError" class="form-label req hidden" style="margin-bottom: 0.75rem;"></div>
+        <button type="submit" id="btnLoginSubmit" class="btn btn-primary" style="width: 100%; margin-top: 0.5rem;">
+          <span>Увійти в систему</span>
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- MAIN APPLICATION VIEW -->
+  <div id="appContainer" class="hidden">
+    <!-- Header -->
+    <header class="app-header glass">
+      <div class="brand-section">
+        <a href="#" class="brand-logo">
+          <div class="logo-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect>
+              <rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect>
+              <line x1="6" y1="6" x2="6.01" y2="6"></line>
+              <line x1="6" y1="18" x2="6.01" y2="18"></line>
+            </svg>
+          </div>
+          <div class="logo-text">
+            <h1>Oxidized DB <span class="badge-tag">Router.db</span></h1>
+          </div>
+        </a>
+
+        <div class="db-path-badge" title="Шлях до файлу конфігурації">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+            <polyline points="14 2 14 8 20 8"></polyline>
+          </svg>
+          <span id="headerDbPath">/var/lib/oxidized/router.db</span>
+        </div>
+      </div>
+
+      <div class="header-actions">
+        <!-- Service Status Pill -->
+        <div class="service-pill" id="serviceStatusPill" title="Статус сервісу oxidized.service (натисніть для оновлення)">
+          <div class="status-dot" id="serviceStatusDot"></div>
+          <span id="serviceStatusText">Перевірка...</span>
+          <button class="copy-btn" id="btnRefreshStatus" title="Оновити статус">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="23 4 23 10 17 10"></polyline>
+              <polyline points="1 20 1 14 7 14"></polyline>
+              <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+            </svg>
+          </button>
+        </div>
+
+        <button class="btn btn-restart" id="btnOpenRestartModal" title="Перезавантажити oxidized.service">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/>
+          </svg>
+          <span>Перезавантажити сервіс</span>
+        </button>
+
+        <button class="btn btn-secondary" id="btnToggleView" title="Перемикання між таблицею і текстовим редактором">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="16 18 22 12 16 6"></polyline>
+            <polyline points="8 6 2 12 8 18"></polyline>
+          </svg>
+          <span id="toggleViewText">Raw редактор</span>
+        </button>
+
+        <button class="btn btn-secondary btn-icon" id="btnOpenChangePassword" title="Змінити пароль">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+            <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+          </svg>
+        </button>
+
+        <button class="btn btn-secondary btn-icon" id="btnLogout" title="Вийти">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+            <polyline points="16 17 21 12 16 7"></polyline>
+            <line x1="21" y1="12" x2="9" y2="12"></line>
+          </svg>
+        </button>
+      </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="container">
+      <!-- Stats Row -->
+      <section class="stats-grid">
+        <div class="stat-card glass">
+          <div class="stat-info">
+            <div class="stat-label">Всього пристроїв</div>
+            <div class="stat-value" id="statTotalDevices">0</div>
+            <div class="stat-desc">Записів у router.db</div>
+          </div>
+          <div class="stat-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="2" y="2" width="20" height="8" rx="2"></rect>
+              <rect x="2" y="14" width="20" height="8" rx="2"></rect>
+              <line x1="6" y1="6" x2="6.01" y2="6"></line>
+              <line x1="6" y1="18" x2="6.01" y2="18"></line>
+            </svg>
+          </div>
+        </div>
+
+        <div class="stat-card glass">
+          <div class="stat-info">
+            <div class="stat-label">Моделі обладнання</div>
+            <div class="stat-value" id="statTotalModels">0</div>
+            <div class="stat-desc" id="statModelsDesc">OS/Драйвери</div>
+          </div>
+          <div class="stat-icon cyan">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
+              <polyline points="2 17 12 22 22 17"></polyline>
+              <polyline points="2 12 12 17 22 12"></polyline>
+            </svg>
+          </div>
+        </div>
+
+        <div class="stat-card glass">
+          <div class="stat-info">
+            <div class="stat-label">Групи</div>
+            <div class="stat-value" id="statTotalGroups">0</div>
+            <div class="stat-desc" id="statGroupsDesc">Логічні підрозділи</div>
+          </div>
+          <div class="stat-icon amber">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+              <circle cx="9" cy="7" r="4"></circle>
+              <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+              <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+            </svg>
+          </div>
+        </div>
+
+        <div class="stat-card glass">
+          <div class="stat-info">
+            <div class="stat-label">Стан Oxidized</div>
+            <div class="stat-value" id="statServiceState" style="font-size: 1.35rem; margin-top: 4px;">active</div>
+            <div class="stat-desc" id="statLastModified">Оновлено: щойно</div>
+          </div>
+          <div class="stat-icon green" id="statServiceIcon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+              <polyline points="22 4 12 14.01 9 11.01"></polyline>
+            </svg>
+          </div>
+        </div>
+      </section>
+
+      <!-- TABLE VIEW -->
+      <section id="tableViewSection">
+        <!-- Control & Filter Bar -->
+        <div class="control-bar glass">
+          <div class="search-box">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="11" cy="11" r="8"></circle>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            </svg>
+            <input type="text" id="searchInput" class="search-input" placeholder="Швидкий пошук за назвою, IP, моделлю, групою...">
+          </div>
+
+          <div class="filter-group">
+            <select id="filterModel" class="filter-select">
+              <option value="">Всі моделі</option>
+            </select>
+
+            <select id="filterGroup" class="filter-select">
+              <option value="">Всі групи</option>
+            </select>
+
+            <button class="btn btn-primary" id="btnOpenAddModal">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="12" y1="5" x2="12" y2="19"></line>
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+              </svg>
+              <span>Додати пристрій</span>
+            </button>
+
+            <span class="device-counter" id="deviceCounter">Показано: 0 з 0</span>
+          </div>
+        </div>
+
+        <!-- Devices Table -->
+        <div class="table-card glass">
+          <div class="table-responsive">
+            <table class="data-table" id="devicesTable">
+              <thead>
+                <tr>
+                  <th style="width: 40px;">#</th>
+                  <th>Назва (Hostname)</th>
+                  <th>IP / FQDN</th>
+                  <th>Модель (Model)</th>
+                  <th>Логін</th>
+                  <th>Пароль</th>
+                  <th>Група</th>
+                  <th>Порт</th>
+                  <th style="text-align: right;">Дії</th>
+                </tr>
+              </thead>
+              <tbody id="devicesTableBody">
+                <!-- Dynamically rendered -->
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Empty State -->
+          <div id="emptyState" class="empty-state hidden">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <circle cx="12" cy="12" r="10"></circle>
+              <line x1="8" y1="12" x2="16" y2="12"></line>
+            </svg>
+            <h3>Пристроїв не знайдено</h3>
+            <p>Немає записів, що відповідають поточному фільтру, або файл порожній.</p>
+            <button class="btn btn-primary" id="btnEmptyAdd">Додати перший пристрій</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- RAW EDITOR VIEW (Alternative view) -->
+      <section id="rawViewSection" class="hidden">
+        <div class="raw-editor-card glass">
+          <div class="raw-header">
+            <div>
+              <h2 style="font-size: 1.15rem; font-weight: 600;">Пряме редагування router.db</h2>
+              <p style="color: var(--text-muted); font-size: 0.8rem; margin-top: 2px;">
+                Формат рядка: <code>name:ip:model:username:password:group:port</code> (коментарі починаються з #)
+              </p>
+            </div>
+            <div style="display: flex; gap: 0.75rem;">
+              <button class="btn btn-secondary" id="btnReloadRaw">Скинути зміни</button>
+              <button class="btn btn-primary" id="btnSaveRaw">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+                  <polyline points="17 21 17 13 7 13 7 21"></polyline>
+                  <polyline points="7 3 7 8 15 8"></polyline>
+                </svg>
+                <span>Зберегти файл</span>
+              </button>
+            </div>
+          </div>
+          <textarea id="rawContentArea" class="raw-textarea" spellcheck="false"></textarea>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- MODAL: ADD / EDIT DEVICE -->
+  <div class="modal-overlay" id="deviceModal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div class="modal-title">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="2" y="2" width="20" height="8" rx="2"></rect>
+            <rect x="2" y="14" width="20" height="8" rx="2"></rect>
+          </svg>
+          <span id="deviceModalTitle">Додати новий пристрій</span>
+        </div>
+        <button class="btn-icon" id="btnCloseDeviceModal" style="background:none; border:none; color:var(--text-muted); cursor:pointer;">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+
+      <form id="deviceForm">
+        <div class="modal-body">
+          <input type="hidden" id="devEditId">
+
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label" for="devName">Назва пристрою (Hostname) <span class="req">*</span></label>
+              <input type="text" id="devName" class="form-input" required placeholder="напр. core-sw01">
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="devIP">IP адреса або FQDN <span class="req">*</span></label>
+              <input type="text" id="devIP" class="form-input" required placeholder="напр. 192.168.1.1">
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label" for="devModel">Модель (OS/Driver) <span class="req">*</span></label>
+              <input type="text" id="devModel" class="form-input" required list="modelSuggestions" placeholder="cisco, junos, routeros...">
+              <datalist id="modelSuggestions">
+                <option value="cisco">
+                <option value="ios">
+                <option value="iosxr">
+                <option value="nxos">
+                <option value="junos">
+                <option value="routeros">
+                <option value="edgeos">
+                <option value="huawei">
+                <option value="fortios">
+                <option value="vyos">
+                <option value="arista">
+                <option value="comware">
+                <option value="hp">
+              </datalist>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="devGroup">Група (Group)</label>
+              <input type="text" id="devGroup" class="form-input" list="groupSuggestions" placeholder="core, access, edge...">
+              <datalist id="groupSuggestions">
+                <option value="core">
+                <option value="distribution">
+                <option value="access">
+                <option value="edge">
+                <option value="border">
+                <option value="security">
+                <option value="vpn">
+              </datalist>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label" for="devUsername">Логін (Username)</label>
+              <input type="text" id="devUsername" class="form-input" placeholder="admin">
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="devPort">Порт (Port)</label>
+              <input type="text" id="devPort" class="form-input" placeholder="22 (можна порожнім)">
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="devPassword">Пароль (Password)</label>
+            <div class="input-with-action">
+              <input type="password" id="devPassword" class="form-input" placeholder="Пароль доступу">
+              <button type="button" class="input-action-btn" id="toggleDevPassword" title="Показати/приховати">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                  <circle cx="12" cy="12" r="3"></circle>
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Попередній перегляд рядка в router.db:</label>
+            <div class="preview-box" id="devPreviewLine">core-sw01:192.168.1.1:cisco:admin:pass:core:22</div>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" id="btnCancelDeviceModal">Скасувати</button>
+          <button type="submit" class="btn btn-primary" id="btnSaveDevice">Зберегти пристрій</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: CONFIRM DELETE -->
+  <div class="modal-overlay" id="deleteModal">
+    <div class="modal-card" style="max-width: 440px;">
+      <div class="modal-header">
+        <div class="modal-title" style="color: var(--danger);">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="3 6 5 6 21 6"></polyline>
+            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+          </svg>
+          <span>Видалити пристрій?</span>
+        </div>
+        <button class="btn-icon" id="btnCloseDeleteModal" style="background:none; border:none; color:var(--text-muted); cursor:pointer;">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+      <div class="modal-body">
+        <p style="color: var(--text-muted); font-size: 0.9rem;">
+          Ви впевнені, що бажаєте видалити пристрій <strong id="deleteDeviceName" style="color: var(--text-main);"></strong> (<span id="deleteDeviceIP" style="color: var(--accent-cyan); font-family: var(--font-mono);"></span>)?
+        </p>
+        <p style="color: var(--text-dim); font-size: 0.8rem; margin-top: 0.5rem;">
+          Цей запис буде видалено з файлу router.db. Перед збереженням буде створено резервну копію .bak.
+        </p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" id="btnCancelDelete">Скасувати</button>
+        <button type="button" class="btn btn-danger" id="btnConfirmDelete">Видалити</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: RESTART OXIDIZED SERVICE -->
+  <div class="modal-overlay" id="restartModal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div class="modal-title" style="color: #fbbf24;">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/>
+          </svg>
+          <span>Перезавантаження oxidized.service</span>
+        </div>
+        <button class="btn-icon" id="btnCloseRestartModal" style="background:none; border:none; color:var(--text-muted); cursor:pointer;">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+      <div class="modal-body">
+        <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 0.85rem;">
+          Виконається команда: <code>systemctl restart oxidized.service</code>. Після перезапуску Oxidized завантажить оновлений router.db.
+        </p>
+        <div class="form-group">
+          <label class="form-label">Журнал виконання команди:</label>
+          <div class="terminal-box" id="restartTerminalOutput">Натисніть "Перезапустити зараз" для виконання...</div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" id="btnCancelRestart">Закрити</button>
+        <button type="button" class="btn btn-restart" id="btnExecuteRestart">
+          <span>Перезапустити зараз</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: CHANGE PASSWORD -->
+  <div class="modal-overlay" id="changePasswordModal">
+    <div class="modal-card" style="max-width: 440px;">
+      <div class="modal-header">
+        <div class="modal-title">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+            <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+          </svg>
+          <span>Зміна пароля доступу</span>
+        </div>
+        <button class="btn-icon" id="btnCloseChangePwdModal" style="background:none; border:none; color:var(--text-muted); cursor:pointer;">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+      <form id="changePasswordForm">
+        <div class="modal-body">
+          <div class="form-group">
+            <label class="form-label" for="currentPassword">Поточний пароль <span class="req">*</span></label>
+            <input type="password" id="currentPassword" class="form-input" required placeholder="Введіть поточний пароль">
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="newPassword">Новий пароль <span class="req">*</span></label>
+            <input type="password" id="newPassword" class="form-input" required minlength="4" placeholder="Мінімум 4 символи">
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="confirmPassword">Підтвердження нового пароля <span class="req">*</span></label>
+            <input type="password" id="confirmPassword" class="form-input" required minlength="4" placeholder="Повторіть новий пароль">
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" id="btnCancelChangePwd">Скасувати</button>
+          <button type="submit" class="btn btn-primary" id="btnSubmitChangePwd">Зберегти пароль</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="/app.js"></script>
+</body>
+</html>

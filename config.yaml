@@ -1,0 +1,12 @@
+server:
+    host: 0.0.0.0
+    port: 8180
+oxidized:
+    db_path: /var/lib/oxidized/router.db
+    restart_command: systemctl restart oxidized.service
+    status_command: systemctl is-active oxidized.service
+    auto_backup: true
+auth:
+    username: admin
+    password_hash: $2a$10$f4Xc1J9nr1W29G//Qtg9v.CLDC1Wv0rFNMktOU8V.Tf/cNA3ZrgXG
+    session_secret: oxidized-manager-secure-session-key-2026
